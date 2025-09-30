@@ -25,6 +25,7 @@ foreach ($zipFile in $zipFiles) {
 $rawMiniDirectories = Get-ChildItem -Path $currentDir -Directory | Where-Object { $_.Name -match "Paperforge.+Tier\d" }
 
 Write-Output "Renaming Directories..."
+
 foreach ($miniDir in $rawMiniDirectories) {
     $newMiniDir = $miniDir.Name -replace "\[.+\]", ""
     $newMiniDir = $newMiniDir -replace "_Tier\d", ""
@@ -32,6 +33,9 @@ foreach ($miniDir in $rawMiniDirectories) {
     $newMiniDir = $newMiniDir -replace "_", " - "
     $pfId = $newMiniDir.Split(" ")[0]
     Rename-Item -LiteralPath $miniDir.Name -NewName $newMiniDir -Force
+    
+    # PNGs
+    Move-Item -LiteralPath $(Join-Path $newMiniDir "PNGs") -Destination $(Join-Path $newMiniDir "$pfId - PNGs") -Force
 
     # CutFile
     $cutDir = Get-ChildItem | Where-Object { $_.Name -match "$pfId" } | Where-Object { $_.Name -match "Cutfile" }
