@@ -44,7 +44,7 @@ foreach ($miniDir in $rawMiniDirectories) {
 
     # VTT File
     $vttDir = Get-ChildItem | Where-Object { $_.Name -match "^VTT$pfId" }
-    $newVttDir = $vttDir.Name.Split("_")[0]
+    $newVttDir = $vttDir.Name.Split("_")[0].Replace("VTT", "").Trim() + " - VTT"
     Move-Item -LiteralPath $vttDir -Destination $(Join-Path $newMiniDir $newVttDir) -Force
 }
 
