@@ -81,3 +81,58 @@ foreach ($pdfFile in $pdfFiles) {
 
 Write-Output ""
 
+Write-Output "Checking and extracting ZIP files with VTT or PNG suffix..."
+
+# Regex pattern to match ZIP files ending with " - VTT.zip" or " - PNG.zip"
+$pattern = ' - (VTT|PNGs)\.zip$'
+
+$specialZipFiles = $zipFiles | Where-Object { $_.Name -match $pattern }
+
+foreach ($zipFile in $specialZipFiles) {
+    $zipPath = $zipFile.FullName
+    $zipName = $zipFile.Name
+    $baseName = $zipName -replace $pattern, ""
+
+    # Load the ZIP archive
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+
+    # Check if all entries are inside a directory (not in root)
+    $entries = $zip.Entries
+    $allInDir = $true
+    $topLevelDirs = @()
+
+    foreach ($entry in $entries) {
+        $parts = $entry.FullName.Split('/')
+        if ($parts.Count -gt 1 -and $parts[0]) {
+            $topLevelDirs += $parts[0]
+        } elseif ($entry.FullName -notmatch '/$' -and $entry.FullName -notmatch '\\$') {
+            # File is in root of ZIP
+            $allInDir = $false
+            break
+        }
+    }
+
+    $zip.Dispose()
+
+    $targetDir = Join-Path $currentDir $baseName
+
+    if ($allInDir -and $topLevelDirs.Count -gt 0) {
+        Write-Output "Extracting $zipName to $targetDir (contains directory)..."
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $targetDir)
+    } else {
+        # Create a subdirectory named after the zip file (without extension)
+        $subDir = Join-Path $targetDir ([System.IO.Path]::GetFileNameWithoutExtension($zipName))
+        if (-Not (Test-Path $subDir)) {
+            New-Item -Path $subDir -ItemType Directory | Out-Null
+        }
+        Write-Output "Extracting $zipName to $subDir (root files detected)..."
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $subDir)
+    }
+
+    # Delete the zip file after extraction
+    Remove-Item -Path $zipPath -Force
+    Write-Output "Deleted zip file: $zipName"
+}
+
+Write-Output ""
