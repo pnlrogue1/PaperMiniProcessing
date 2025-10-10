@@ -1,3 +1,7 @@
+[CmdletBinding()]
+
+Param()
+
 # Get the current working directory
 $currentDir = Get-Location
 
@@ -64,7 +68,8 @@ foreach ($pdfFile in $pdfFiles) {
     if (-Not (Test-Path $targetDir)) {
         New-Item -Path $targetDir -ItemType Directory | Out-Null
         Write-Output "Created directory: $targetDir"
-    } else {
+    }
+    else {
         Write-Output "Directory already exists: $targetDir"
     }
 }
@@ -106,7 +111,8 @@ foreach ($zipFile in $specialZipFiles) {
         $parts = $entry.FullName.Split('/')
         if ($parts.Count -gt 1 -and $parts[0]) {
             $topLevelDirs += $parts[0]
-        } elseif ($entry.FullName -notmatch '/$' -and $entry.FullName -notmatch '\\$') {
+        }
+        elseif ($entry.FullName -notmatch '/$' -and $entry.FullName -notmatch '\\$') {
             # File is in root of ZIP
             $allInDir = $false
             break
@@ -120,7 +126,8 @@ foreach ($zipFile in $specialZipFiles) {
     if ($allInDir -and $topLevelDirs.Count -gt 0) {
         Write-Output "Extracting $zipName to $targetDir (contains directory)..."
         [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $targetDir)
-    } else {
+    }
+    else {
         # Create a subdirectory named after the zip file (without extension)
         $subDir = Join-Path $targetDir ([System.IO.Path]::GetFileNameWithoutExtension($zipName))
         if (-Not (Test-Path $subDir)) {
@@ -134,5 +141,59 @@ foreach ($zipFile in $specialZipFiles) {
     Remove-Item -Path $zipPath -Force
     Write-Output "Deleted zip file: $zipName"
 }
+
+Write-Output ""
+
+# Refresh the zip files in the source directory
+$zipFiles = Get-ChildItem -Path $sourceDir -Filter "*.zip"
+
+Write-Output "Extracting the Cutfiles..."
+foreach ($zipFile in $zipFiles) {
+    Write-Verbose "Processing ZIP file: $($zipFile.Name)"
+    # if ($zipFile.Name -match " - Studio( ?)Cutfile$") {
+    #     continue
+    # }
+    Write-Verbose "zipFile: $zipFile"
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($zipFile.Name)
+    $baseName = $baseName -replace " - Studio( ?)Cutfile$", ""
+    Write-Verbose "baseName: $baseName"
+    $targetDir = Join-Path $currentDir $baseName
+    Write-Verbose "targetDir: $targetDir"
+
+    if (-Not (Test-Path $targetDir)) {
+        New-Item -Path $targetDir -ItemType Directory | Out-Null
+    }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile.FullName, $targetDir)
+    Remove-Item -Path $zipFile.FullName -Force
+    Write-Output "Extracted and deleted: $($zipFile.Name) -> $targetDir"
+}
+
+Write-Output ""
+
+### Not working:
+# Write-Output "Renaming child directories to remove tier info and fix VTT names..."
+# $childDirs = Get-ChildItem -Path $currentDir -Directory
+# foreach ($dir in $childDirs) {
+#     foreach ($childDir in $dir) {
+#         $newName = $childDir.Name
+
+#         # Remove " - Tier ?\d"
+#         $newName = $newName -replace " - Tier( ?)\d", ""
+
+#         # If starts with "VTT - ", move it to end as " - VTT"
+#         if ($newName -match "^VTT - ") {
+#             $base = $newName -replace "^VTT - ", ""
+#             $newName = "$base - VTT"
+#         }
+
+#         if ($newName -ne $childDir.Name) {
+#             Rename-Item -Path $childDir.FullName -NewName $newName -Force
+#             Write-Output "Renamed directory: $($childDir.Name) -> $newName"
+#         }
+#     }
+    
+# }
 
 Write-Output ""
