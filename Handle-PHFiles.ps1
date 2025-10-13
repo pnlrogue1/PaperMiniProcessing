@@ -150,12 +150,9 @@ $zipFiles = Get-ChildItem -Path $sourceDir -Filter "*.zip"
 Write-Output "Extracting the Cutfiles..."
 foreach ($zipFile in $zipFiles) {
     Write-Verbose "Processing ZIP file: $($zipFile.Name)"
-    # if ($zipFile.Name -match " - Studio( ?)Cutfile$") {
-    #     continue
-    # }
     Write-Verbose "zipFile: $zipFile"
     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($zipFile.Name)
-    $baseName = $baseName -replace " - Studio( ?)Cutfile$", ""
+    $baseName = $baseName -replace " - Studio( ?)Cutfile(.+)$", ""
     Write-Verbose "baseName: $baseName"
     $targetDir = Join-Path $currentDir $baseName
     Write-Verbose "targetDir: $targetDir"
