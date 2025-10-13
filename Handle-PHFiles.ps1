@@ -152,7 +152,7 @@ foreach ($zipFile in $zipFiles) {
     Write-Verbose "Processing ZIP file: $($zipFile.Name)"
     Write-Verbose "zipFile: $zipFile"
     $baseName = [System.IO.Path]::GetFileNameWithoutExtension($zipFile.Name)
-    $baseName = $baseName -replace " - Studio( ?)Cutfile(.+)$", ""
+    $baseName = $baseName -replace " - Studio( ?)Cutfile(.*)$", ""
     Write-Verbose "baseName: $baseName"
     $targetDir = Join-Path $currentDir $baseName
     Write-Verbose "targetDir: $targetDir"
